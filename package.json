@@ -1,0 +1,91 @@
+{
+  "name": "deep-code-vscode",
+  "displayName": "Deep Code",
+  "description": "AI-powered code context, semantic search, and Q&A for VS Code",
+  "publisher": "tonycodes",
+  "version": "0.1.0",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tonycodes/deep-code-vscode"
+  },
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "AI",
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "deepCode",
+          "title": "Deep Code",
+          "icon": "resources/icons/deep-code.svg"
+        }
+      ]
+    },
+    "views": {
+      "deepCode": [
+        {
+          "id": "deepCode.search",
+          "name": "Search"
+        },
+        {
+          "id": "deepCode.context",
+          "name": "Context"
+        },
+        {
+          "id": "deepCode.askAi",
+          "name": "Ask AI"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "deepCode.configure",
+        "title": "Deep Code: Configure API Key"
+      }
+    ],
+    "configuration": {
+      "title": "Deep Code",
+      "properties": {
+        "deepCode.apiUrl": {
+          "type": "string",
+          "default": "https://api.rag.test",
+          "description": "RAG Platform API URL"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\"",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "package": "vsce package",
+    "prepare": "husky || true"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.20.0",
+    "@types/vscode": "^1.95.0",
+    "@vscode/vsce": "^3.2.2",
+    "esbuild": "^0.24.2",
+    "eslint": "^9.20.0",
+    "eslint-config-prettier": "^10.0.1",
+    "prettier": "^3.5.2",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.24.1",
+    "vitest": "^2.1.8"
+  }
+}
