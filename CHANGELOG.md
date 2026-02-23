@@ -4,9 +4,11 @@
 
 ### Added
 
-- Initial scaffold of Deep Code VS Code extension
-- Activity bar icon with sidebar container (Search, Context, Ask AI views)
-- "Deep Code: Configure API Key" command with SecretStorage
-- `deepCode.apiUrl` setting for RAG Platform API URL
+- Ask AI sidebar chat with streaming LLM responses
+- Editor context awareness (current file, selection, language sent with prompts)
+- 3 LLM providers: GitHub Copilot, Claude Max/Pro, Claude API
+- Provider switching via command palette
+- Anthropic API key and Claude Max token configuration with SecretStorage
+- Activity bar icon with Deep Code sidebar container
 - esbuild bundling with watch mode
 - CI workflow (lint, typecheck, test, build + package)

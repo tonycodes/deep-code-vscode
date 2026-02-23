@@ -1,7 +1,7 @@
 {
   "name": "deep-code-vscode",
   "displayName": "Deep Code",
-  "description": "AI-powered code context, semantic search, and Q&A for VS Code",
+  "description": "AI-powered chat for VS Code with editor context awareness",
   "publisher": "tonycodes",
   "version": "0.1.0",
   "license": "MIT",
@@ -33,14 +33,6 @@
     "views": {
       "deepCode": [
         {
-          "id": "deepCode.search",
-          "name": "Search"
-        },
-        {
-          "id": "deepCode.context",
-          "name": "Context"
-        },
-        {
           "id": "deepCode.askAi",
           "name": "Ask AI",
           "type": "webview"
@@ -48,10 +40,6 @@
       ]
     },
     "commands": [
-      {
-        "command": "deepCode.configure",
-        "title": "Deep Code: Configure API Key"
-      },
       {
         "command": "deepCode.configureAnthropicKey",
         "title": "Deep Code: Configure Anthropic API Key"
@@ -68,11 +56,6 @@
     "configuration": {
       "title": "Deep Code",
       "properties": {
-        "deepCode.apiUrl": {
-          "type": "string",
-          "default": "https://api.rag.test",
-          "description": "RAG Platform API URL"
-        },
         "deepCode.llmProvider": {
           "type": "string",
           "enum": [

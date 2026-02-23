@@ -1,12 +1,33 @@
 # Deep Code
 
-AI-powered code context, semantic search, and Q&A for VS Code — powered by [RAG Platform](https://github.com/tonycodes/rag-platform).
+AI-powered chat for VS Code with editor context awareness.
 
 ## Features
 
-- **Semantic Search** — Find code by meaning, not just text matching
-- **Code Context** — Understand relationships and dependencies in your codebase
-- **Ask AI** — Get answers about your code with full context awareness
+- **Ask AI** — Chat with an LLM directly in the VS Code sidebar with streaming responses
+- **Editor context** — Automatically includes your current file, selection, and language for relevant answers
+- **3 LLM providers** — Choose between GitHub Copilot, Claude Max/Pro, or Claude API
+
+## Setup
+
+1. Install the extension (`.vsix` or marketplace)
+2. Open the command palette (`Cmd+Shift+P` / `Ctrl+Shift+P`)
+3. Run **"Deep Code: Switch LLM Provider"** to pick your provider
+
+### Provider setup
+
+| Provider | Setup |
+|----------|-------|
+| **GitHub Copilot** | Works automatically with your Copilot subscription (default) |
+| **Claude (Max Plan)** | Run `claude setup-token` in your terminal, then use **"Deep Code: Configure Claude Max Token"** |
+| **Claude (API Key)** | Get a key from [console.anthropic.com](https://console.anthropic.com), then use **"Deep Code: Configure Anthropic API Key"** |
+
+## Settings
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `deepCode.llmProvider` | `copilot` | LLM provider (`copilot`, `claude-max`, `claude`) |
+| `deepCode.claude.model` | `claude-sonnet-4-20250514` | Claude model for both Max and API key providers |
 
 ## Development
 
@@ -36,20 +57,6 @@ npm run typecheck    # TypeScript type checking
 npm run lint         # ESLint
 npm run test         # Run tests
 npm run package      # Create .vsix package
-```
-
-## Configuration
-
-1. Open the command palette (`Cmd+Shift+P` / `Ctrl+Shift+P`)
-2. Run **"Deep Code: Configure API Key"**
-3. Enter your RAG Platform API key
-
-Set the API URL in VS Code settings:
-
-```json
-{
-  "deepCode.apiUrl": "https://api.rag.test"
-}
 ```
 
 ## Install from VSIX

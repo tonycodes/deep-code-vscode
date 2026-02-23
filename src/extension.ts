@@ -1,12 +1,5 @@
 import * as vscode from 'vscode';
-import {
-  configureApiKey,
-  configureAnthropicKey,
-  configureClaudeMaxToken,
-  switchProvider,
-} from './commands/configure';
-import { SearchViewProvider } from './views/searchView';
-import { ContextViewProvider } from './views/contextView';
+import { configureAnthropicKey, configureClaudeMaxToken, switchProvider } from './commands/configure';
 import { AskAiViewProvider } from './views/askAiView';
 import { ProviderManager } from './llm/providerManager';
 
@@ -24,7 +17,6 @@ export function activate(context: vscode.ExtensionContext): void {
 
     // Register commands
     context.subscriptions.push(
-      vscode.commands.registerCommand('deepCode.configure', () => configureApiKey(context)),
       vscode.commands.registerCommand('deepCode.configureAnthropicKey', () =>
         configureAnthropicKey(context),
       ),
@@ -34,15 +26,6 @@ export function activate(context: vscode.ExtensionContext): void {
       vscode.commands.registerCommand('deepCode.switchProvider', () =>
         switchProvider(providerManager),
       ),
-    );
-
-    // Register tree data providers for Search and Context views
-    const searchProvider = new SearchViewProvider();
-    const contextProvider = new ContextViewProvider();
-
-    context.subscriptions.push(
-      vscode.window.registerTreeDataProvider('deepCode.search', searchProvider),
-      vscode.window.registerTreeDataProvider('deepCode.context', contextProvider),
     );
 
     // Register Ask AI as a webview provider
