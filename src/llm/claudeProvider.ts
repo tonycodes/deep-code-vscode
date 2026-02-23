@@ -3,21 +3,52 @@ import type { LLMProvider, ChatMessage, ChatOptions } from './provider';
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const ANTHROPIC_VERSION = '2023-06-01';
-const SECRET_KEY = 'deepCode.anthropicApiKey';
+
+export interface ClaudeProviderConfig {
+  id: string;
+  name: string;
+  secretKey: string;
+  missingKeyMessage: string;
+  invalidKeyMessage: string;
+}
+
+export const CLAUDE_API_CONFIG: ClaudeProviderConfig = {
+  id: 'claude',
+  name: 'Claude (API Key)',
+  secretKey: 'deepCode.anthropicApiKey',
+  missingKeyMessage: 'Anthropic API key not configured. Run "Deep Code: Configure Anthropic API Key" first.',
+  invalidKeyMessage: 'Invalid Anthropic API key. Run "Deep Code: Configure Anthropic API Key" to update it.',
+};
+
+export const CLAUDE_MAX_CONFIG: ClaudeProviderConfig = {
+  id: 'claude-max',
+  name: 'Claude (Max Plan)',
+  secretKey: 'deepCode.claudeMaxToken',
+  missingKeyMessage:
+    'Claude Max token not configured. Run "Deep Code: Configure Claude Max Token" first.\n' +
+    'Get your token by running: claude setup-token',
+  invalidKeyMessage:
+    'Invalid Claude Max token. Run "Deep Code: Configure Claude Max Token" to update it.\n' +
+    'Get a fresh token by running: claude setup-token',
+};
 
 export class ClaudeProvider implements LLMProvider {
-  readonly id = 'claude';
-  readonly name = 'Claude (Anthropic)';
+  readonly id: string;
+  readonly name: string;
 
   private context: vscode.ExtensionContext;
+  private config: ClaudeProviderConfig;
 
-  constructor(context: vscode.ExtensionContext) {
+  constructor(context: vscode.ExtensionContext, config: ClaudeProviderConfig) {
     this.context = context;
+    this.config = config;
+    this.id = config.id;
+    this.name = config.name;
   }
 
   async isAvailable(): Promise<boolean> {
-    const apiKey = await this.context.secrets.get(SECRET_KEY);
-    return !!apiKey;
+    const key = await this.context.secrets.get(this.config.secretKey);
+    return !!key;
   }
 
   async chat(messages: ChatMessage[], options?: ChatOptions): Promise<string> {
@@ -92,11 +123,9 @@ export class ClaudeProvider implements LLMProvider {
     options: ChatOptions | undefined,
     stream: boolean,
   ): Promise<{ body: AnthropicRequest; headers: Record<string, string> }> {
-    const apiKey = await this.context.secrets.get(SECRET_KEY);
+    const apiKey = await this.context.secrets.get(this.config.secretKey);
     if (!apiKey) {
-      throw new Error(
-        'Anthropic API key not configured. Run "Deep Code: Configure Anthropic API Key" first.',
-      );
+      throw new Error(this.config.missingKeyMessage);
     }
 
     const model =
@@ -139,7 +168,7 @@ export class ClaudeProvider implements LLMProvider {
       const data = (await response.json()) as { error?: { message?: string } };
       const msg = data?.error?.message || response.statusText;
       if (response.status === 401) {
-        return 'Invalid Anthropic API key. Run "Deep Code: Configure Anthropic API Key" to update it.';
+        return this.config.invalidKeyMessage;
       }
       return `Anthropic API error (${response.status}): ${msg}`;
     } catch {

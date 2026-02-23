@@ -1,5 +1,10 @@
 import * as vscode from 'vscode';
-import { configureApiKey, configureAnthropicKey, switchProvider } from './commands/configure';
+import {
+  configureApiKey,
+  configureAnthropicKey,
+  configureClaudeMaxToken,
+  switchProvider,
+} from './commands/configure';
 import { SearchViewProvider } from './views/searchView';
 import { ContextViewProvider } from './views/contextView';
 import { AskAiViewProvider } from './views/askAiView';
@@ -22,6 +27,9 @@ export function activate(context: vscode.ExtensionContext): void {
       vscode.commands.registerCommand('deepCode.configure', () => configureApiKey(context)),
       vscode.commands.registerCommand('deepCode.configureAnthropicKey', () =>
         configureAnthropicKey(context),
+      ),
+      vscode.commands.registerCommand('deepCode.configureClaudeMaxToken', () =>
+        configureClaudeMaxToken(context),
       ),
       vscode.commands.registerCommand('deepCode.switchProvider', () =>
         switchProvider(providerManager),

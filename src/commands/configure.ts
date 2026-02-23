@@ -3,6 +3,7 @@ import type { ProviderManager, ProviderId } from '../llm/providerManager';
 
 const API_KEY_SECRET = 'deepCode.apiKey';
 const ANTHROPIC_KEY_SECRET = 'deepCode.anthropicApiKey';
+const CLAUDE_MAX_SECRET = 'deepCode.claudeMaxToken';
 
 export async function configureApiKey(context: vscode.ExtensionContext): Promise<void> {
   await configureSecret(context, {
@@ -19,8 +20,18 @@ export async function configureAnthropicKey(context: vscode.ExtensionContext): P
     secretKey: ANTHROPIC_KEY_SECRET,
     title: 'Deep Code: Configure Anthropic API Key',
     prompt: 'Enter your Anthropic API key for Claude',
-    placeHolder: 'sk-ant-...',
+    placeHolder: 'sk-ant-api...',
     label: 'Anthropic API key',
+  });
+}
+
+export async function configureClaudeMaxToken(context: vscode.ExtensionContext): Promise<void> {
+  await configureSecret(context, {
+    secretKey: CLAUDE_MAX_SECRET,
+    title: 'Deep Code: Configure Claude Max Token',
+    prompt: 'Enter your Claude Max OAuth token (run "claude setup-token" to get it)',
+    placeHolder: 'sk-ant-oat01-...',
+    label: 'Claude Max token',
   });
 }
 
@@ -35,9 +46,15 @@ export async function switchProvider(providerManager: ProviderManager): Promise<
       providerId: 'copilot',
     },
     {
-      label: 'Claude (Anthropic)',
+      label: 'Claude (Max Plan)',
+      description: currentId === 'claude-max' ? '(current)' : undefined,
+      detail: 'Uses your Claude Max/Pro subscription — run "claude setup-token" for token',
+      providerId: 'claude-max',
+    },
+    {
+      label: 'Claude (API Key)',
       description: currentId === 'claude' ? '(current)' : undefined,
-      detail: 'Uses Claude via Anthropic API — requires API key',
+      detail: 'Uses Claude via Anthropic API — requires API key from console.anthropic.com',
       providerId: 'claude',
     },
   ];
