@@ -42,7 +42,8 @@
         },
         {
           "id": "deepCode.askAi",
-          "name": "Ask AI"
+          "name": "Ask AI",
+          "type": "webview"
         }
       ]
     },
