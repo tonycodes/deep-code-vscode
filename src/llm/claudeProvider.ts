@@ -1,7 +1,10 @@
+import * as https from 'https';
+import type { IncomingMessage } from 'http';
 import * as vscode from 'vscode';
 import type { LLMProvider, ChatMessage, ChatOptions } from './provider';
 
-const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
+const ANTHROPIC_HOST = 'api.anthropic.com';
+const ANTHROPIC_PATH = '/v1/messages';
 const ANTHROPIC_VERSION = '2023-06-01';
 
 export interface ClaudeProviderConfig {
@@ -53,78 +56,74 @@ export class ClaudeProvider implements LLMProvider {
 
   async chat(messages: ChatMessage[], options?: ChatOptions): Promise<string> {
     const { body, headers } = await this.buildRequest(messages, options, false);
+    const payload = JSON.stringify(body);
 
-    let response: Response;
-    try {
-      response = await fetch(ANTHROPIC_API_URL, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body),
-      });
-    } catch (err) {
-      throw new Error(`Failed to connect to Anthropic API: ${err instanceof Error ? err.message : String(err)}`);
-    }
+    const responseBody = await new Promise<string>((resolve, reject) => {
+      const req = https.request(
+        { hostname: ANTHROPIC_HOST, path: ANTHROPIC_PATH, method: 'POST', headers: { ...headers, 'Content-Length': Buffer.byteLength(payload) } },
+        (res: IncomingMessage) => {
+          let data = '';
+          res.on('data', (chunk: Buffer) => (data += chunk.toString()));
+          res.on('end', () => {
+            if (res.statusCode && res.statusCode >= 400) {
+              reject(new Error(this.formatErrorSync(res.statusCode, data)));
+            } else {
+              resolve(data);
+            }
+          });
+        },
+      );
+      req.on('error', (err: Error) => reject(new Error(`Failed to connect to Anthropic API: ${err.message}`)));
+      req.write(payload);
+      req.end();
+    });
 
-    if (!response.ok) {
-      throw new Error(await this.formatError(response));
-    }
-
-    const data = (await response.json()) as AnthropicResponse;
+    const data = JSON.parse(responseBody) as AnthropicResponse;
     return data.content.map((block) => block.text).join('');
   }
 
   async *chatStream(messages: ChatMessage[], options?: ChatOptions): AsyncIterable<string> {
     const { body, headers } = await this.buildRequest(messages, options, true);
+    const payload = JSON.stringify(body);
 
-    let response: Response;
-    try {
-      response = await fetch(ANTHROPIC_API_URL, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body),
-      });
-    } catch (err) {
-      throw new Error(`Failed to connect to Anthropic API: ${err instanceof Error ? err.message : String(err)}`);
+    const stream = await new Promise<{ statusCode: number; stream: IncomingMessage }>((resolve, reject) => {
+      const req = https.request(
+        { hostname: ANTHROPIC_HOST, path: ANTHROPIC_PATH, method: 'POST', headers: { ...headers, 'Content-Length': Buffer.byteLength(payload) } },
+        (res: IncomingMessage) => resolve({ statusCode: res.statusCode || 0, stream: res }),
+      );
+      req.on('error', (err: Error) => reject(new Error(`Failed to connect to Anthropic API: ${err.message}`)));
+      req.write(payload);
+      req.end();
+    });
+
+    if (stream.statusCode >= 400) {
+      let errorBody = '';
+      for await (const chunk of stream.stream) {
+        errorBody += chunk.toString();
+      }
+      throw new Error(this.formatErrorSync(stream.statusCode, errorBody));
     }
 
-    if (!response.ok) {
-      throw new Error(await this.formatError(response));
-    }
-
-    if (!response.body) {
-      throw new Error('No response body received from Anthropic API');
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
     let buffer = '';
+    for await (const chunk of stream.stream) {
+      buffer += chunk.toString();
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
 
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6);
+        if (data === '[DONE]') return;
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const data = line.slice(6);
-          if (data === '[DONE]') return;
-
-          try {
-            const event = JSON.parse(data) as AnthropicStreamEvent;
-            if (event.type === 'content_block_delta' && event.delta?.text) {
-              yield event.delta.text;
-            }
-          } catch {
-            // Skip malformed JSON lines
+        try {
+          const event = JSON.parse(data) as AnthropicStreamEvent;
+          if (event.type === 'content_block_delta' && event.delta?.text) {
+            yield event.delta.text;
           }
+        } catch {
+          // Skip malformed JSON lines
         }
       }
-    } finally {
-      reader.releaseLock();
     }
   }
 
@@ -179,16 +178,16 @@ export class ClaudeProvider implements LLMProvider {
     return { body, headers };
   }
 
-  private async formatError(response: Response): Promise<string> {
+  private formatErrorSync(statusCode: number, body: string): string {
     try {
-      const data = (await response.json()) as { error?: { message?: string } };
-      const msg = data?.error?.message || response.statusText;
-      if (response.status === 401) {
+      const data = JSON.parse(body) as { error?: { message?: string } };
+      const msg = data?.error?.message || `HTTP ${statusCode}`;
+      if (statusCode === 401) {
         return this.config.invalidKeyMessage;
       }
-      return `Anthropic API error (${response.status}): ${msg}`;
+      return `Anthropic API error (${statusCode}): ${msg}`;
     } catch {
-      return `Anthropic API error (${response.status}): ${response.statusText}`;
+      return `Anthropic API error (${statusCode}): ${body.slice(0, 200)}`;
     }
   }
 }
