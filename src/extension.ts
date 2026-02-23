@@ -49,6 +49,7 @@ export function activate(context: vscode.ExtensionContext): void {
     const askAiProvider = new AskAiViewProvider(context.extensionUri, providerManager);
     context.subscriptions.push(
       vscode.window.registerWebviewViewProvider(AskAiViewProvider.viewType, askAiProvider),
+      askAiProvider,
     );
 
     outputChannel.appendLine(
