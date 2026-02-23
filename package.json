@@ -50,6 +50,14 @@
       {
         "command": "deepCode.configure",
         "title": "Deep Code: Configure API Key"
+      },
+      {
+        "command": "deepCode.configureAnthropicKey",
+        "title": "Deep Code: Configure Anthropic API Key"
+      },
+      {
+        "command": "deepCode.switchProvider",
+        "title": "Deep Code: Switch LLM Provider"
       }
     ],
     "configuration": {
@@ -59,6 +67,21 @@
           "type": "string",
           "default": "https://api.rag.test",
           "description": "RAG Platform API URL"
+        },
+        "deepCode.llmProvider": {
+          "type": "string",
+          "enum": ["copilot", "claude"],
+          "default": "copilot",
+          "enumDescriptions": [
+            "GitHub Copilot (uses your existing subscription, no API key needed)",
+            "Claude by Anthropic (requires API key)"
+          ],
+          "description": "LLM provider for AI features"
+        },
+        "deepCode.claude.model": {
+          "type": "string",
+          "default": "claude-sonnet-4-20250514",
+          "description": "Claude model to use (requires Anthropic API key)"
         }
       }
     }
