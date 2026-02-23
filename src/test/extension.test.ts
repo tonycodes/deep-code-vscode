@@ -174,46 +174,7 @@ describe('ClaudeProvider', () => {
     expect(available).toBe(true);
   });
 
-  it('claude-max uses different secret key', async () => {
-    const { ClaudeProvider, CLAUDE_MAX_CONFIG } = await import('../llm/claudeProvider');
-    const mockContext = {
-      secrets: { get: vi.fn().mockResolvedValue('sk-ant-oat01-test') },
-    };
-    const provider = new ClaudeProvider(mockContext as never, CLAUDE_MAX_CONFIG);
-    expect(provider.id).toBe('claude-max');
-    expect(provider.name).toBe('Claude (Max Plan)');
-    const available = await provider.isAvailable();
-    expect(available).toBe(true);
-  });
-
-  it('uses Bearer auth for OAuth tokens (sk-ant-oat)', async () => {
-    const { ClaudeProvider, CLAUDE_MAX_CONFIG } = await import('../llm/claudeProvider');
-    const mockContext = {
-      secrets: { get: vi.fn().mockResolvedValue('sk-ant-oat01-test-token') },
-    };
-    const provider = new ClaudeProvider(mockContext as never, CLAUDE_MAX_CONFIG);
-
-    const fakeRes = new EventEmitter() as EventEmitter & { statusCode: number };
-    fakeRes.statusCode = 200;
-    const fakeReq = Object.assign(new EventEmitter(), { write: vi.fn(), end: vi.fn() });
-
-    mockHttpsRequest.mockImplementation((_opts: unknown, cb: (res: typeof fakeRes) => void) => {
-      process.nextTick(() => {
-        cb(fakeRes);
-        fakeRes.emit('data', Buffer.from(JSON.stringify({ content: [{ type: 'text', text: 'hello' }] })));
-        fakeRes.emit('end');
-      });
-      return fakeReq;
-    });
-
-    await provider.chat([{ role: 'user', content: 'hi' }]);
-
-    const headers = mockHttpsRequest.mock.calls[0][0].headers;
-    expect(headers['Authorization']).toBe('Bearer sk-ant-oat01-test-token');
-    expect(headers['x-api-key']).toBeUndefined();
-  });
-
-  it('uses x-api-key for regular API keys', async () => {
+  it('uses x-api-key header for API calls', async () => {
     const { ClaudeProvider, CLAUDE_API_CONFIG } = await import('../llm/claudeProvider');
     const mockContext = {
       secrets: { get: vi.fn().mockResolvedValue('sk-ant-api03-test-key') },
@@ -237,7 +198,6 @@ describe('ClaudeProvider', () => {
 
     const headers = mockHttpsRequest.mock.calls[0][0].headers;
     expect(headers['x-api-key']).toBe('sk-ant-api03-test-key');
-    expect(headers['Authorization']).toBeUndefined();
   });
 
   it('wraps connection errors with context', async () => {
@@ -257,6 +217,28 @@ describe('ClaudeProvider', () => {
     await expect(provider.chat([{ role: 'user', content: 'hi' }])).rejects.toThrow(
       'Failed to connect to Anthropic API: ECONNREFUSED',
     );
+  });
+});
+
+describe('ClaudeCliProvider', () => {
+  it('has correct id and name', async () => {
+    const { ClaudeCliProvider } = await import('../llm/claudeCliProvider');
+    const mockContext = {
+      secrets: { get: vi.fn() },
+    };
+    const provider = new ClaudeCliProvider(mockContext as never);
+    expect(provider.id).toBe('claude-max');
+    expect(provider.name).toBe('Claude (Max Plan)');
+  });
+
+  it('reports unavailable when no token stored', async () => {
+    const { ClaudeCliProvider } = await import('../llm/claudeCliProvider');
+    const mockContext = {
+      secrets: { get: vi.fn().mockResolvedValue(undefined) },
+    };
+    const provider = new ClaudeCliProvider(mockContext as never);
+    const available = await provider.isAvailable();
+    expect(available).toBe(false);
   });
 });
 

@@ -23,17 +23,6 @@ export const CLAUDE_API_CONFIG: ClaudeProviderConfig = {
   invalidKeyMessage: 'Invalid Anthropic API key. Run "Deep Code: Configure Anthropic API Key" to update it.',
 };
 
-export const CLAUDE_MAX_CONFIG: ClaudeProviderConfig = {
-  id: 'claude-max',
-  name: 'Claude (Max Plan)',
-  secretKey: 'deepCode.claudeMaxToken',
-  missingKeyMessage:
-    'Claude Max token not configured. Run "Deep Code: Configure Claude Max Token" first.\n' +
-    'Get your token by running: claude setup-token',
-  invalidKeyMessage:
-    'Invalid Claude Max token. Run "Deep Code: Configure Claude Max Token" to update it.\n' +
-    'Get a fresh token by running: claude setup-token',
-};
 
 export class ClaudeProvider implements LLMProvider {
   readonly id: string;
@@ -168,12 +157,7 @@ export class ClaudeProvider implements LLMProvider {
       'anthropic-version': ANTHROPIC_VERSION,
     };
 
-    // OAuth tokens (from claude setup-token) use Bearer auth; API keys use x-api-key
-    if (apiKey.startsWith('sk-ant-oat')) {
-      headers['Authorization'] = `Bearer ${apiKey}`;
-    } else {
-      headers['x-api-key'] = apiKey;
-    }
+    headers['x-api-key'] = apiKey;
 
     return { body, headers };
   }
