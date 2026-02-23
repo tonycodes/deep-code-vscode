@@ -42,7 +42,7 @@ export class ClaudeCliProvider implements LLMProvider {
     }
 
     const model = vscode.workspace.getConfiguration('deepCode').get<string>('claude.model') || '';
-    const args = ['-p', prompt, '--output-format', 'text', '--max-turns', '1'];
+    const args = ['-p', prompt, '--output-format', 'text', '--max-turns', '5'];
     if (model) {
       args.push('--model', model);
     }
@@ -103,7 +103,7 @@ export class ClaudeCliProvider implements LLMProvider {
     }
 
     const model = vscode.workspace.getConfiguration('deepCode').get<string>('claude.model') || '';
-    const args = ['-p', prompt, '--output-format', 'json', '--max-turns', '1'];
+    const args = ['-p', prompt, '--output-format', 'json', '--max-turns', '5'];
     if (model) {
       args.push('--model', model);
     }
