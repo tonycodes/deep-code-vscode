@@ -54,11 +54,16 @@ export class ClaudeProvider implements LLMProvider {
   async chat(messages: ChatMessage[], options?: ChatOptions): Promise<string> {
     const { body, headers } = await this.buildRequest(messages, options, false);
 
-    const response = await fetch(ANTHROPIC_API_URL, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-    });
+    let response: Response;
+    try {
+      response = await fetch(ANTHROPIC_API_URL, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+      });
+    } catch (err) {
+      throw new Error(`Failed to connect to Anthropic API: ${err instanceof Error ? err.message : String(err)}`);
+    }
 
     if (!response.ok) {
       throw new Error(await this.formatError(response));
@@ -71,11 +76,16 @@ export class ClaudeProvider implements LLMProvider {
   async *chatStream(messages: ChatMessage[], options?: ChatOptions): AsyncIterable<string> {
     const { body, headers } = await this.buildRequest(messages, options, true);
 
-    const response = await fetch(ANTHROPIC_API_URL, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-    });
+    let response: Response;
+    try {
+      response = await fetch(ANTHROPIC_API_URL, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+      });
+    } catch (err) {
+      throw new Error(`Failed to connect to Anthropic API: ${err instanceof Error ? err.message : String(err)}`);
+    }
 
     if (!response.ok) {
       throw new Error(await this.formatError(response));
@@ -156,9 +166,15 @@ export class ClaudeProvider implements LLMProvider {
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'x-api-key': apiKey,
       'anthropic-version': ANTHROPIC_VERSION,
     };
+
+    // OAuth tokens (from claude setup-token) use Bearer auth; API keys use x-api-key
+    if (apiKey.startsWith('sk-ant-oat')) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    } else {
+      headers['x-api-key'] = apiKey;
+    }
 
     return { body, headers };
   }
