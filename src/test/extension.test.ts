@@ -1,4 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { EventEmitter } from 'events';
+
+const mockHttpsRequest = vi.fn();
+vi.mock('https', () => ({ request: mockHttpsRequest }));
 
 // Mock vscode module since it's not available outside the Extension Host
 const mockConfig = new Map<string, unknown>();
@@ -62,6 +66,7 @@ vi.mock(
 
 beforeEach(() => {
   mockConfig.clear();
+  mockHttpsRequest.mockReset();
 });
 
 describe('extension', () => {
@@ -188,19 +193,24 @@ describe('ClaudeProvider', () => {
     };
     const provider = new ClaudeProvider(mockContext as never, CLAUDE_MAX_CONFIG);
 
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ content: [{ type: 'text', text: 'hello' }] }),
+    const fakeRes = new EventEmitter() as EventEmitter & { statusCode: number };
+    fakeRes.statusCode = 200;
+    const fakeReq = Object.assign(new EventEmitter(), { write: vi.fn(), end: vi.fn() });
+
+    mockHttpsRequest.mockImplementation((_opts: unknown, cb: (res: typeof fakeRes) => void) => {
+      process.nextTick(() => {
+        cb(fakeRes);
+        fakeRes.emit('data', Buffer.from(JSON.stringify({ content: [{ type: 'text', text: 'hello' }] })));
+        fakeRes.emit('end');
+      });
+      return fakeReq;
     });
-    vi.stubGlobal('fetch', mockFetch);
 
     await provider.chat([{ role: 'user', content: 'hi' }]);
 
-    const headers = mockFetch.mock.calls[0][1].headers;
+    const headers = mockHttpsRequest.mock.calls[0][0].headers;
     expect(headers['Authorization']).toBe('Bearer sk-ant-oat01-test-token');
     expect(headers['x-api-key']).toBeUndefined();
-
-    vi.unstubAllGlobals();
   });
 
   it('uses x-api-key for regular API keys', async () => {
@@ -210,35 +220,43 @@ describe('ClaudeProvider', () => {
     };
     const provider = new ClaudeProvider(mockContext as never, CLAUDE_API_CONFIG);
 
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ content: [{ type: 'text', text: 'hello' }] }),
+    const fakeRes = new EventEmitter() as EventEmitter & { statusCode: number };
+    fakeRes.statusCode = 200;
+    const fakeReq = Object.assign(new EventEmitter(), { write: vi.fn(), end: vi.fn() });
+
+    mockHttpsRequest.mockImplementation((_opts: unknown, cb: (res: typeof fakeRes) => void) => {
+      process.nextTick(() => {
+        cb(fakeRes);
+        fakeRes.emit('data', Buffer.from(JSON.stringify({ content: [{ type: 'text', text: 'hello' }] })));
+        fakeRes.emit('end');
+      });
+      return fakeReq;
     });
-    vi.stubGlobal('fetch', mockFetch);
 
     await provider.chat([{ role: 'user', content: 'hi' }]);
 
-    const headers = mockFetch.mock.calls[0][1].headers;
+    const headers = mockHttpsRequest.mock.calls[0][0].headers;
     expect(headers['x-api-key']).toBe('sk-ant-api03-test-key');
     expect(headers['Authorization']).toBeUndefined();
-
-    vi.unstubAllGlobals();
   });
 
-  it('wraps fetch errors with context', async () => {
+  it('wraps connection errors with context', async () => {
     const { ClaudeProvider, CLAUDE_API_CONFIG } = await import('../llm/claudeProvider');
     const mockContext = {
       secrets: { get: vi.fn().mockResolvedValue('sk-ant-api03-test-key') },
     };
     const provider = new ClaudeProvider(mockContext as never, CLAUDE_API_CONFIG);
 
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('invalid url')));
+    const fakeReq = Object.assign(new EventEmitter(), { write: vi.fn(), end: vi.fn() });
+
+    mockHttpsRequest.mockImplementation(() => {
+      process.nextTick(() => fakeReq.emit('error', new Error('ECONNREFUSED')));
+      return fakeReq;
+    });
 
     await expect(provider.chat([{ role: 'user', content: 'hi' }])).rejects.toThrow(
-      'Failed to connect to Anthropic API: invalid url',
+      'Failed to connect to Anthropic API: ECONNREFUSED',
     );
-
-    vi.unstubAllGlobals();
   });
 });
 
