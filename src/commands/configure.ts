@@ -1,19 +1,8 @@
 import * as vscode from 'vscode';
 import type { ProviderManager, ProviderId } from '../llm/providerManager';
 
-const API_KEY_SECRET = 'deepCode.apiKey';
 const ANTHROPIC_KEY_SECRET = 'deepCode.anthropicApiKey';
 const CLAUDE_MAX_SECRET = 'deepCode.claudeMaxToken';
-
-export async function configureApiKey(context: vscode.ExtensionContext): Promise<void> {
-  await configureSecret(context, {
-    secretKey: API_KEY_SECRET,
-    title: 'Deep Code: Configure API Key',
-    prompt: 'Enter your RAG Platform API key',
-    placeHolder: 'rak_...',
-    label: 'API key',
-  });
-}
 
 export async function configureAnthropicKey(context: vscode.ExtensionContext): Promise<void> {
   await configureSecret(context, {
@@ -69,10 +58,6 @@ export async function switchProvider(providerManager: ProviderManager): Promise<
   }
 
   await vscode.workspace.getConfiguration('deepCode').update('llmProvider', picked.providerId, true);
-}
-
-export async function getApiKey(context: vscode.ExtensionContext): Promise<string | undefined> {
-  return context.secrets.get(API_KEY_SECRET);
 }
 
 async function configureSecret(

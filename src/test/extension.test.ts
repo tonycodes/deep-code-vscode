@@ -85,8 +85,8 @@ describe('extension', () => {
     };
 
     expect(() => activate(mockContext as never)).not.toThrow();
-    // 1 providerManager + 4 commands + 2 tree providers + 1 webview provider + 1 askAiProvider = 9
-    expect(mockContext.subscriptions.length).toBe(9);
+    // 1 providerManager + 3 commands + 1 webview provider + 1 askAiProvider = 6
+    expect(mockContext.subscriptions.length).toBe(6);
   });
 
   it('deactivate is a function', async () => {
@@ -241,26 +241,6 @@ describe('ClaudeCliProvider', () => {
     const provider = new ClaudeCliProvider(mockContext as never);
     const available = await provider.isAvailable();
     expect(available).toBe(false);
-  });
-});
-
-describe('SearchViewProvider', () => {
-  it('returns placeholder items', async () => {
-    const { SearchViewProvider } = await import('../views/searchView');
-    const provider = new SearchViewProvider();
-    const items = provider.getChildren();
-    expect(items).toHaveLength(1);
-    expect(items[0].label).toBe('Search coming soon...');
-  });
-});
-
-describe('ContextViewProvider', () => {
-  it('returns placeholder items', async () => {
-    const { ContextViewProvider } = await import('../views/contextView');
-    const provider = new ContextViewProvider();
-    const items = provider.getChildren();
-    expect(items).toHaveLength(1);
-    expect(items[0].label).toBe('Context coming soon...');
   });
 });
 

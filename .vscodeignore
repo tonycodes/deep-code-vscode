@@ -4,6 +4,7 @@ src/**
 node_modules/**
 coverage/**
 *.vsix
+.env
 .gitignore
 .prettierrc
 esbuild.js
