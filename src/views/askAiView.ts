@@ -8,11 +8,30 @@ export class AskAiViewProvider implements vscode.WebviewViewProvider {
   private webviewView?: vscode.WebviewView;
   private conversationHistory: ChatMessage[] = [];
   private isStreaming = false;
+  private lastActiveEditor?: vscode.TextEditor;
+  private disposables: vscode.Disposable[] = [];
 
   constructor(
     private readonly extensionUri: vscode.Uri,
     private readonly providerManager: ProviderManager,
-  ) {}
+  ) {
+    // Track the last active text editor so we still have context
+    // when the user switches focus to the webview to type
+    this.lastActiveEditor = vscode.window.activeTextEditor;
+    this.disposables.push(
+      vscode.window.onDidChangeActiveTextEditor((editor) => {
+        if (editor) {
+          this.lastActiveEditor = editor;
+        }
+      }),
+    );
+  }
+
+  dispose(): void {
+    for (const d of this.disposables) {
+      d.dispose();
+    }
+  }
 
   resolveWebviewView(webviewView: vscode.WebviewView): void {
     this.webviewView = webviewView;
@@ -45,7 +64,7 @@ export class AskAiViewProvider implements vscode.WebviewViewProvider {
   }
 
   private getEditorContext(): string {
-    const editor = vscode.window.activeTextEditor;
+    const editor = vscode.window.activeTextEditor || this.lastActiveEditor;
     if (!editor) return '';
 
     const doc = editor.document;

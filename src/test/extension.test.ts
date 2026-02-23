@@ -22,6 +22,8 @@ vi.mock(
       showQuickPick: vi.fn(),
       registerTreeDataProvider: vi.fn(() => ({ dispose: vi.fn() })),
       registerWebviewViewProvider: vi.fn(() => ({ dispose: vi.fn() })),
+      onDidChangeActiveTextEditor: vi.fn(() => ({ dispose: vi.fn() })),
+      activeTextEditor: undefined,
     },
     Uri: {
       joinPath: vi.fn(),
@@ -83,8 +85,8 @@ describe('extension', () => {
     };
 
     expect(() => activate(mockContext as never)).not.toThrow();
-    // 1 providerManager + 4 commands + 2 tree providers + 1 webview provider = 8
-    expect(mockContext.subscriptions.length).toBe(8);
+    // 1 providerManager + 4 commands + 2 tree providers + 1 webview provider + 1 askAiProvider = 9
+    expect(mockContext.subscriptions.length).toBe(9);
   });
 
   it('deactivate is a function', async () => {
