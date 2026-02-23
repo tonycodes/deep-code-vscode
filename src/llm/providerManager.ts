@@ -1,7 +1,8 @@
 import * as vscode from 'vscode';
 import type { LLMProvider } from './provider';
 import { CopilotProvider } from './copilotProvider';
-import { ClaudeProvider, CLAUDE_API_CONFIG, CLAUDE_MAX_CONFIG } from './claudeProvider';
+import { ClaudeProvider, CLAUDE_API_CONFIG } from './claudeProvider';
+import { ClaudeCliProvider } from './claudeCliProvider';
 
 export type ProviderId = 'copilot' | 'claude' | 'claude-max';
 
@@ -15,7 +16,7 @@ export class ProviderManager implements vscode.Disposable {
     this.providers = new Map<ProviderId, LLMProvider>([
       ['copilot', new CopilotProvider()],
       ['claude', new ClaudeProvider(context, CLAUDE_API_CONFIG)],
-      ['claude-max', new ClaudeProvider(context, CLAUDE_MAX_CONFIG)],
+      ['claude-max', new ClaudeCliProvider(context)],
     ]);
 
     this.disposables.push(
