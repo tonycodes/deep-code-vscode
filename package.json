@@ -57,6 +57,10 @@
         "title": "Deep Code: Configure Anthropic API Key"
       },
       {
+        "command": "deepCode.configureClaudeMaxToken",
+        "title": "Deep Code: Configure Claude Max Token"
+      },
+      {
         "command": "deepCode.switchProvider",
         "title": "Deep Code: Switch LLM Provider"
       }
@@ -71,18 +75,19 @@
         },
         "deepCode.llmProvider": {
           "type": "string",
-          "enum": ["copilot", "claude"],
+          "enum": ["copilot", "claude-max", "claude"],
           "default": "copilot",
           "enumDescriptions": [
             "GitHub Copilot (uses your existing subscription, no API key needed)",
-            "Claude by Anthropic (requires API key)"
+            "Claude Max/Pro plan (uses your CLI subscription token)",
+            "Claude API key (pay-per-token from console.anthropic.com)"
           ],
           "description": "LLM provider for AI features"
         },
         "deepCode.claude.model": {
           "type": "string",
           "default": "claude-sonnet-4-20250514",
-          "description": "Claude model to use (requires Anthropic API key)"
+          "description": "Claude model to use (for both Claude Max and API key providers)"
         }
       }
     }

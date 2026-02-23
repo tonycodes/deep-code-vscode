@@ -78,8 +78,8 @@ describe('extension', () => {
     };
 
     expect(() => activate(mockContext as never)).not.toThrow();
-    // 1 providerManager + 3 commands + 2 tree providers + 1 webview provider = 7
-    expect(mockContext.subscriptions.length).toBe(7);
+    // 1 providerManager + 4 commands + 2 tree providers + 1 webview provider = 8
+    expect(mockContext.subscriptions.length).toBe(8);
   });
 
   it('deactivate is a function', async () => {
@@ -121,7 +121,21 @@ describe('ProviderManager', () => {
 
     const claude = manager.getProvider('claude');
     expect(claude.id).toBe('claude');
-    expect(claude.name).toBe('Claude (Anthropic)');
+    expect(claude.name).toBe('Claude (API Key)');
+
+    const claudeMax = manager.getProvider('claude-max');
+    expect(claudeMax.id).toBe('claude-max');
+    expect(claudeMax.name).toBe('Claude (Max Plan)');
+  });
+
+  it('returns claude-max provider when configured', async () => {
+    mockConfig.set('llmProvider', 'claude-max');
+    const { ProviderManager } = await import('../llm/providerManager');
+    const mockContext = {
+      secrets: { get: vi.fn(), store: vi.fn(), delete: vi.fn() },
+    };
+    const manager = new ProviderManager(mockContext as never);
+    expect(manager.getConfiguredProviderId()).toBe('claude-max');
   });
 });
 
@@ -136,21 +150,33 @@ describe('CopilotProvider', () => {
 
 describe('ClaudeProvider', () => {
   it('reports unavailable when no API key stored', async () => {
-    const { ClaudeProvider } = await import('../llm/claudeProvider');
+    const { ClaudeProvider, CLAUDE_API_CONFIG } = await import('../llm/claudeProvider');
     const mockContext = {
       secrets: { get: vi.fn().mockResolvedValue(undefined) },
     };
-    const provider = new ClaudeProvider(mockContext as never);
+    const provider = new ClaudeProvider(mockContext as never, CLAUDE_API_CONFIG);
     const available = await provider.isAvailable();
     expect(available).toBe(false);
   });
 
   it('reports available when API key is stored', async () => {
-    const { ClaudeProvider } = await import('../llm/claudeProvider');
+    const { ClaudeProvider, CLAUDE_API_CONFIG } = await import('../llm/claudeProvider');
     const mockContext = {
       secrets: { get: vi.fn().mockResolvedValue('sk-ant-test-key') },
     };
-    const provider = new ClaudeProvider(mockContext as never);
+    const provider = new ClaudeProvider(mockContext as never, CLAUDE_API_CONFIG);
+    const available = await provider.isAvailable();
+    expect(available).toBe(true);
+  });
+
+  it('claude-max uses different secret key', async () => {
+    const { ClaudeProvider, CLAUDE_MAX_CONFIG } = await import('../llm/claudeProvider');
+    const mockContext = {
+      secrets: { get: vi.fn().mockResolvedValue('sk-ant-oat01-test') },
+    };
+    const provider = new ClaudeProvider(mockContext as never, CLAUDE_MAX_CONFIG);
+    expect(provider.id).toBe('claude-max');
+    expect(provider.name).toBe('Claude (Max Plan)');
     const available = await provider.isAvailable();
     expect(available).toBe(true);
   });
