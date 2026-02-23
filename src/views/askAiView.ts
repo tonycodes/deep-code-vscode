@@ -44,6 +44,39 @@ export class AskAiViewProvider implements vscode.WebviewViewProvider {
     this.postMessage({ type: 'providerInfo', name: provider.name });
   }
 
+  private getEditorContext(): string {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return '';
+
+    const doc = editor.document;
+    const filePath = vscode.workspace.asRelativePath(doc.uri);
+    const selection = editor.selection;
+
+    if (!selection.isEmpty) {
+      const selectedText = doc.getText(selection);
+      const startLine = selection.start.line + 1;
+      const endLine = selection.end.line + 1;
+      return (
+        `\n\nThe user has selected code in ${filePath} (lines ${startLine}-${endLine}):\n` +
+        '```\n' + selectedText + '\n```'
+      );
+    }
+
+    // No selection — include the visible range for context
+    const visibleRange = editor.visibleRanges[0];
+    if (visibleRange) {
+      const visibleText = doc.getText(visibleRange);
+      const startLine = visibleRange.start.line + 1;
+      const endLine = visibleRange.end.line + 1;
+      return (
+        `\n\nThe user is viewing ${filePath} (lines ${startLine}-${endLine}):\n` +
+        '```\n' + visibleText + '\n```'
+      );
+    }
+
+    return `\n\nThe user has ${filePath} open in the editor.`;
+  }
+
   private async handleUserMessage(text: string): Promise<void> {
     if (this.isStreaming || !text.trim()) return;
 
@@ -57,11 +90,13 @@ export class AskAiViewProvider implements vscode.WebviewViewProvider {
       const provider = await this.providerManager.getAvailableProvider();
       this.postMessage({ type: 'providerInfo', name: provider.name });
 
+      const editorContext = this.getEditorContext();
       let fullResponse = '';
       for await (const chunk of provider.chatStream(this.conversationHistory, {
         system:
           'You are Deep Code, an AI coding assistant embedded in VS Code. ' +
-          'Be concise and helpful. Format code with markdown fenced code blocks.',
+          'Be concise and helpful. Format code with markdown fenced code blocks.' +
+          editorContext,
       })) {
         if (!this.isStreaming) break;
         fullResponse += chunk;
