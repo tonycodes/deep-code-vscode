@@ -28,15 +28,19 @@ export function activate(context: vscode.ExtensionContext): void {
       ),
     );
 
-    // Register tree data providers for sidebar views
+    // Register tree data providers for Search and Context views
     const searchProvider = new SearchViewProvider();
     const contextProvider = new ContextViewProvider();
-    const askAiProvider = new AskAiViewProvider();
 
     context.subscriptions.push(
       vscode.window.registerTreeDataProvider('deepCode.search', searchProvider),
       vscode.window.registerTreeDataProvider('deepCode.context', contextProvider),
-      vscode.window.registerTreeDataProvider('deepCode.askAi', askAiProvider),
+    );
+
+    // Register Ask AI as a webview provider
+    const askAiProvider = new AskAiViewProvider(context.extensionUri, providerManager);
+    context.subscriptions.push(
+      vscode.window.registerWebviewViewProvider(AskAiViewProvider.viewType, askAiProvider),
     );
 
     outputChannel.appendLine(

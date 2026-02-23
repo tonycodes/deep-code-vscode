@@ -17,6 +17,10 @@ vi.mock(
       showInputBox: vi.fn(),
       showQuickPick: vi.fn(),
       registerTreeDataProvider: vi.fn(() => ({ dispose: vi.fn() })),
+      registerWebviewViewProvider: vi.fn(() => ({ dispose: vi.fn() })),
+    },
+    Uri: {
+      joinPath: vi.fn(),
     },
     commands: {
       registerCommand: vi.fn(() => ({ dispose: vi.fn() })),
@@ -74,7 +78,7 @@ describe('extension', () => {
     };
 
     expect(() => activate(mockContext as never)).not.toThrow();
-    // 1 providerManager + 3 commands + 3 tree providers = 7
+    // 1 providerManager + 3 commands + 2 tree providers + 1 webview provider = 7
     expect(mockContext.subscriptions.length).toBe(7);
   });
 
@@ -173,11 +177,20 @@ describe('ContextViewProvider', () => {
 });
 
 describe('AskAiViewProvider', () => {
-  it('returns placeholder items', async () => {
+  it('has correct view type', async () => {
     const { AskAiViewProvider } = await import('../views/askAiView');
-    const provider = new AskAiViewProvider();
-    const items = provider.getChildren();
-    expect(items).toHaveLength(1);
-    expect(items[0].label).toBe('Ask AI coming soon...');
+    expect(AskAiViewProvider.viewType).toBe('deepCode.askAi');
+  });
+
+  it('constructs with extension uri and provider manager', async () => {
+    const { AskAiViewProvider } = await import('../views/askAiView');
+    const { ProviderManager } = await import('../llm/providerManager');
+    const mockContext = {
+      secrets: { get: vi.fn(), store: vi.fn(), delete: vi.fn() },
+    };
+    const manager = new ProviderManager(mockContext as never);
+    const mockUri = { fsPath: '/test' };
+    const provider = new AskAiViewProvider(mockUri as never, manager);
+    expect(provider).toBeDefined();
   });
 });
