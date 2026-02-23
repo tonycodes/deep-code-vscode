@@ -14,6 +14,10 @@ export class ClaudeCliProvider implements LLMProvider {
     this.context = context;
   }
 
+  private getWorkspacePath(): string | undefined {
+    return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  }
+
   async isAvailable(): Promise<boolean> {
     const token = await this.context.secrets.get(SECRET_KEY);
     if (!token) return false;
@@ -48,6 +52,7 @@ export class ClaudeCliProvider implements LLMProvider {
     }
 
     const proc = spawn('claude', args, {
+      cwd: this.getWorkspacePath(),
       env: { ...process.env, CLAUDECODE: '', CLAUDE_CODE_OAUTH_TOKEN: token },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -110,6 +115,7 @@ export class ClaudeCliProvider implements LLMProvider {
 
     return new Promise<CliResult>((resolve, reject) => {
       const proc = spawn('claude', args, {
+        cwd: this.getWorkspacePath(),
         env: { ...process.env, CLAUDECODE: '', CLAUDE_CODE_OAUTH_TOKEN: token },
         stdio: ['ignore', 'pipe', 'pipe'],
       });
