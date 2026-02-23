@@ -180,6 +180,66 @@ describe('ClaudeProvider', () => {
     const available = await provider.isAvailable();
     expect(available).toBe(true);
   });
+
+  it('uses Bearer auth for OAuth tokens (sk-ant-oat)', async () => {
+    const { ClaudeProvider, CLAUDE_MAX_CONFIG } = await import('../llm/claudeProvider');
+    const mockContext = {
+      secrets: { get: vi.fn().mockResolvedValue('sk-ant-oat01-test-token') },
+    };
+    const provider = new ClaudeProvider(mockContext as never, CLAUDE_MAX_CONFIG);
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ content: [{ type: 'text', text: 'hello' }] }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    await provider.chat([{ role: 'user', content: 'hi' }]);
+
+    const headers = mockFetch.mock.calls[0][1].headers;
+    expect(headers['Authorization']).toBe('Bearer sk-ant-oat01-test-token');
+    expect(headers['x-api-key']).toBeUndefined();
+
+    vi.unstubAllGlobals();
+  });
+
+  it('uses x-api-key for regular API keys', async () => {
+    const { ClaudeProvider, CLAUDE_API_CONFIG } = await import('../llm/claudeProvider');
+    const mockContext = {
+      secrets: { get: vi.fn().mockResolvedValue('sk-ant-api03-test-key') },
+    };
+    const provider = new ClaudeProvider(mockContext as never, CLAUDE_API_CONFIG);
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ content: [{ type: 'text', text: 'hello' }] }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    await provider.chat([{ role: 'user', content: 'hi' }]);
+
+    const headers = mockFetch.mock.calls[0][1].headers;
+    expect(headers['x-api-key']).toBe('sk-ant-api03-test-key');
+    expect(headers['Authorization']).toBeUndefined();
+
+    vi.unstubAllGlobals();
+  });
+
+  it('wraps fetch errors with context', async () => {
+    const { ClaudeProvider, CLAUDE_API_CONFIG } = await import('../llm/claudeProvider');
+    const mockContext = {
+      secrets: { get: vi.fn().mockResolvedValue('sk-ant-api03-test-key') },
+    };
+    const provider = new ClaudeProvider(mockContext as never, CLAUDE_API_CONFIG);
+
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('invalid url')));
+
+    await expect(provider.chat([{ role: 'user', content: 'hi' }])).rejects.toThrow(
+      'Failed to connect to Anthropic API: invalid url',
+    );
+
+    vi.unstubAllGlobals();
+  });
 });
 
 describe('SearchViewProvider', () => {
